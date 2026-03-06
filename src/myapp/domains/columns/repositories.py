@@ -1,6 +1,6 @@
-from typing import Protocol, List
+from typing import Optional, Protocol, List
 from myapp.db.models import BoardColumn
-from myapp.domains.columns.schemas import ColumnCreate, ColumnRead
+from myapp.domains.columns.schemas import ColumnCreate, ColumnUpdate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,12 @@ class ColumnRepositoryProtocol(Protocol):
         ...
 
     async def get_columns(self, board_id: int) -> List[BoardColumn]:
+        ...
+    
+    async def delete_column(self, column_id: int) -> bool:
+        ...
+
+    async def update_column(self, column_id: int, update_data: ColumnUpdate) -> BoardColumn:
         ...
 
 
@@ -24,7 +30,26 @@ class PostgresColumnRepository:
         await self.session.commit()
         await self.session.refresh(new_column)
         return new_column
-    
+
     async def get_columns(self, board_id: int) -> List[BoardColumn]:
         result = await self.session.scalars(select(BoardColumn).where(BoardColumn.board_id == board_id))
         return list(result.all())
+
+    async def delete_column(self, column_id: int) -> bool:
+        target_column = await self.session.get(BoardColumn, column_id)
+        if target_column:
+            await self.session.delete(target_column)
+            await self.session.commit()
+            return True
+        return False
+
+    async def update_column(self, column_id: int, update_data: ColumnUpdate) -> Optional[BoardColumn]:
+        column = await self.session.get(BoardColumn, column_id)
+        if not column:
+            return None
+        update_dict = update_data.model_dump(exclude_unset=True)
+        for key, value in update_dict.items():
+            setattr(column, key, value)
+        await self.session.commit()
+        await self.session.refresh(column)
+        return column

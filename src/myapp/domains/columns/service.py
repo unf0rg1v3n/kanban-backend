@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional
 from myapp.db.models import BoardColumn
 from myapp.domains.columns.repositories import ColumnRepositoryProtocol
-from myapp.domains.columns.schemas import ColumnCreate
+from myapp.domains.columns.schemas import ColumnCreate, ColumnUpdate
 
 
 class ColumnService:
@@ -13,3 +13,9 @@ class ColumnService:
     
     async def get_columns(self, board_id: int) -> List[BoardColumn]:
         return await self.column_repository.get_columns(board_id)
+    
+    async def delete_column(self, column_id: int) -> bool:
+        return await self.column_repository.delete_column(column_id)
+    
+    async def update_column(self, column_id: int, update_data: ColumnUpdate) -> Optional[BoardColumn]:
+        return await self.column_repository.update_column(column_id, update_data)
